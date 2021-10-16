@@ -1,0 +1,33 @@
+{
+  "name": "vertigo",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filvan1/vertigo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/filvan1/vertigo/issues"
+  },
+  "homepage": "https://github.com/filvan1/vertigo#readme",
+  "devDependencies": {
+    "@types/lodash": "^4.14.175",
+    "@types/node": "^16.11.0",
+    "browserify": "^17.0.0",
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.4.4",
+    "webpack": "^5.58.2",
+    "webpack-cli": "^4.9.0"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.3"
+  }
+}
