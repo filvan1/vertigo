@@ -1,10 +1,13 @@
 import VertexShaderSource from "./shaders/vertex.glsl";
 import FragmentShaderSource from "./shaders/fragment.glsl";
+import { IMessageSubscriber } from "../message/IMessageSubscriber";
+import { Message } from "../message/message";
+import { MessageBus } from "../message/messageBus";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
 
-export default class Renderer {
+export default class Renderer implements IMessageSubscriber{
 	constructor(target: HTMLCanvasElement) {
 		_canvas = target;
 
@@ -14,7 +17,18 @@ export default class Renderer {
 
 		gl = _canvas.getContext("webgl2");
 		if (gl === undefined) throw new Error("Unable to initiaze WebGL");
+		MessageBus.addSubscription("CLICK",this);
 	}
+
+	receiveMessage(message: Message): void {
+		console.log("Renderer received "+message.identifier);
+	}
+
+	 
+	public get getRenderer() : Renderer {
+		return this;
+	}
+	
 
 	init() {
 
@@ -85,6 +99,29 @@ export default class Renderer {
 		gl.drawArrays(primitiveType, offset, count);
 
         
+
+	}
+
+	public render():void{
+		//Resize the GL Canvas to the size determined by CSS
+		Renderer.resizeCanvasToDisplaySize(_canvas);
+		//Tell WebGL how to convert from clip space to pixels!
+		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+		//Scrub the canvas
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+		
+
+		var primitiveType = gl.TRIANGLES;
+		var offset = 0;
+		var count = 3;
+
+		/*Iterates through the array and draws them even if the vertices have been loaded before. 
+      gl.drawElements is quicker in many cases, since it caches repeated vertices in the gpu. 
+      */
+		gl.drawArrays(primitiveType, offset, count);
 
 	}
 
