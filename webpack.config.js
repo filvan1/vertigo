@@ -15,6 +15,11 @@ module.exports = {
         use: 'raw-loader',
         exclude: /node_modules/,
       },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        use: 'file-loader',
+        exclude: /node_modules/,
+      }
     ],
   },
   resolve: {

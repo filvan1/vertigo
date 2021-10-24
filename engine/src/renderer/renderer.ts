@@ -3,126 +3,171 @@ import FragmentShaderSource from "./shaders/fragment.glsl";
 import { IMessageSubscriber } from "../message/IMessageSubscriber";
 import { Message } from "../message/message";
 import { MessageBus } from "../message/messageBus";
+import { mat4, Mat4 } from "../math/mat4";
+import importImage from "../wall.jpg";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
+var _program;
+var _vao;
+var _texture;
+var _ebo;
+var _indices;
 
-export default class Renderer implements IMessageSubscriber{
+export default class Renderer implements IMessageSubscriber {
 	constructor(target: HTMLCanvasElement) {
 		_canvas = target;
 
-        if (_canvas == null) {
+		if (_canvas == null) {
 			throw new Error("Canvas initialization failed!");
 		}
 
 		gl = _canvas.getContext("webgl2");
 		if (gl === undefined) throw new Error("Unable to initiaze WebGL");
-		MessageBus.addSubscription("CLICK",this);
+		MessageBus.addSubscription("CLICK", this);
+		var image = new Image();
+		image.onload = (event) => {
+			console.log("image loaded!");
+			this.init(image);
+		};
+		image.onerror = (error) => {
+			console.log(error);
+		};
+		image.src = importImage;
 	}
 
 	receiveMessage(message: Message): void {
-		console.log("Renderer received "+message.identifier);
+		console.log("Renderer received " + message.identifier);
 	}
 
-	 
-	public get getRenderer() : Renderer {
+	public get getRenderer(): Renderer {
 		return this;
 	}
-	
 
-	init() {
-
+	init(image) {
 		var vert = Renderer.createShader(gl, gl.VERTEX_SHADER, VertexShaderSource);
-		var frag = Renderer.createShader(gl, gl.FRAGMENT_SHADER, FragmentShaderSource);
+		var frag = Renderer.createShader(
+			gl,
+			gl.FRAGMENT_SHADER,
+			FragmentShaderSource
+		);
 
-		var program = Renderer.createProgram(gl, vert, frag);
-        //Tell WebGL to use our program
-		gl.useProgram(program);
+		_program = Renderer.createProgram(gl, vert, frag);
 
-		if (program == null) {
+		//Tell WebGL to use our program
+		gl.useProgram(_program);
+
+		if (_program == null) {
 			throw new Error("Program creation failed!");
 		}
-		
 
-		//Look up where our compiled attribute ended up
-		var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-
-		//Create a buffer and tell WebGL what it's for
-		var positionBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-		var positions = [0, 0, 0, 0.5, 0.7, 0];
-		//Bind data to the buffer and tell it that the data won't change that much.
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-		//Create and bind vertex list, oh yeah!
-		var vao = gl.createVertexArray();
-		gl.bindVertexArray(vao);
-		//"Turn on" the attribute so that we can use the data. If we don't do this the attribute will be a constant
-		gl.enableVertexAttribArray(positionAttributeLocation);
-
-		//Tell WebGL how to get the data out. Binds current ARRAY_BUFFER to the attribute, so now we can bind whatever
-		var size = 2; // 2 components per iteration
-		var type = gl.FLOAT; // the data is 32bit floats
-		var normalize = false; // don't normalize the data
-		var stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
-		var offset = 0; // start at the beginning of the buffer
-
-		//This binds current ARRAY_BUFFER to the vertex attribute, so now the ARRAY_BUFFER can be freely changed without impacting it.
-		gl.vertexAttribPointer(
-			positionAttributeLocation,
-			size,
-			type,
-			normalize,
-			stride,
-			offset
-		);
+		gl.deleteShader(vert);
+		gl.deleteShader(frag);
 
 		//Resize the GL Canvas to the size determined by CSS
 		Renderer.resizeCanvasToDisplaySize(_canvas);
-		//Tell WebGL that the viewport has changed!
-		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-		//Scrub the canvas
-		gl.clearColor(0, 0, 0, 0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		//Look up where our compiled position attribute ended up
+		var positionAttributeLocation = gl.getAttribLocation(
+			_program,
+			"a_position"
+		);
 
-		
+		//texture coordinate attribute
+		var texCoordLocation = gl.getAttribLocation(_program, "a_texCoord");
 
-		var primitiveType = gl.TRIANGLES;
-		var offset = 0;
-		var count = 3;
+		//pos:x,y,z;colour:r,g,b;texture:s,t
+		var vertices = [
+			0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+			1.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -0.5, 0.5, 0.0, 1.0,
+			1.0, 0.0, 0.0, 1.0
+		];
+		_indices = new Uint16Array([0, 1, 3, 1, 2, 3]);
+		var texCoords = [0.0, 0.0, 1.0, 0.0, 0.5, 1.0];
 
-		/*Iterates through the array and draws them even if the vertices have been loaded before. 
-      gl.drawElements is quicker in many cases, since it caches repeated vertices in the gpu. 
-      */
-		gl.drawArrays(primitiveType, offset, count);
+		//Bind vertex array object, contains vertex buffer objects
+		_vao = gl.createVertexArray();
+		gl.bindVertexArray(_vao);
 
-        
+		//Copy vertices from array to vertex buffer object vbo
+		var vbo = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
+		//Copy indices from array to element buffer object ebo
+		_ebo = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, _ebo);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, _indices, gl.STATIC_DRAW);
+
+		console.log(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE));
+		console.log(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE));
+
+		//position attribute
+		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 8 * 4, 0);
+		gl.enableVertexAttribArray(0);
+		//color attribute
+		gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 8 * 4, 3 * 4);
+		gl.enableVertexAttribArray(1);
+		//texture coordinate attribute
+		gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 8 * 4, 6 * 4);
+		gl.enableVertexAttribArray(2);
+
+		//Texture coordinate buffer handling
+		_texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, _texture);
+
+		//Texture render parameters
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+		gl.texParameteri(
+			gl.TEXTURE_2D,
+			gl.TEXTURE_MIN_FILTER,
+			gl.LINEAR_MIPMAP_LINEAR
+		);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+		let target = gl.TEXTURE_2D;
+		let mipMapLevel = 0;
+		let internalFormat = gl.RGBA;
+		let format = gl.RGBA;
+		let type = gl.UNSIGNED_BYTE;
+
+		gl.texImage2D(target, mipMapLevel, internalFormat, format, type, image);
+		gl.generateMipmap(gl.TEXTURE_2D);
+
+		this.render();
 	}
 
-	public render():void{
+	public render(): void {
 		//Resize the GL Canvas to the size determined by CSS
 		Renderer.resizeCanvasToDisplaySize(_canvas);
 		//Tell WebGL how to convert from clip space to pixels!
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 		//Scrub the canvas
-		gl.clearColor(0, 0, 0, 0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.clearColor(0, 0, 0, 1);
 
-		
+		//Tell it to use the program
+		gl.useProgram(_program);
+
+		gl.bindTexture(gl.TEXTURE_2D, _texture);
+		gl.bindVertexArray(_vao);
 
 		var primitiveType = gl.TRIANGLES;
 		var offset = 0;
-		var count = 3;
+		var count = 6;
+		/*componentType         Size in bytes
+			5120 (BYTE)           1
+			5121 (UNSIGNED_BYTE)  1
+			5122 (SHORT)          2
+			5123 (UNSIGNED_SHORT) 2
+			5125 (UNSIGNED_INT)   4
+			5126 (FLOAT)          4*/
+		//if less than 256 indices, use UNSIGNED_SHORT! See table above
+		var indexType = gl.UNSIGNED_SHORT;
 
-		/*Iterates through the array and draws them even if the vertices have been loaded before. 
-      gl.drawElements is quicker in many cases, since it caches repeated vertices in the gpu. 
-      */
-		gl.drawArrays(primitiveType, offset, count);
-
+		gl.drawElements(primitiveType, count, indexType, offset);
 	}
 
 	//#region Helper functions --------------------------------------------------------
@@ -143,6 +188,7 @@ export default class Renderer implements IMessageSubscriber{
 		gl.compileShader(shader);
 		var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
 		if (success) {
+			console.log(gl.getShaderInfoLog(shader));
 			return shader;
 		}
 

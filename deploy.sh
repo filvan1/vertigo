@@ -1,2 +1,2 @@
 npx webpack
-sudo cp ./build/app.js /var/www/html/engine
+sudo cp ./build/* /var/www/html/engine
