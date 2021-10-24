@@ -3,8 +3,8 @@ import FragmentShaderSource from "./shaders/fragment.glsl";
 import { IMessageSubscriber } from "../message/IMessageSubscriber";
 import { Message } from "../message/message";
 import { MessageBus } from "../message/messageBus";
-import { mat4, Mat4 } from "../math/mat4";
 import importImage from "../wall.jpg";
+import { mat4, vec3 } from "gl-matrix";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
@@ -13,9 +13,15 @@ var _vao;
 var _texture;
 var _ebo;
 var _indices;
+var now=1/60;
+var rotation=0;
+var trans;
+var transformLocation;
 
 export default class Renderer implements IMessageSubscriber {
+	messageBus: MessageBus;
 	constructor(target: HTMLCanvasElement) {
+		this.messageBus=MessageBus.getInstance();
 		_canvas = target;
 
 		if (_canvas == null) {
@@ -24,11 +30,13 @@ export default class Renderer implements IMessageSubscriber {
 
 		gl = _canvas.getContext("webgl2");
 		if (gl === undefined) throw new Error("Unable to initiaze WebGL");
-		MessageBus.addSubscription("CLICK", this);
+		this.messageBus.addSubscription("CLICK", this);
 		var image = new Image();
 		image.onload = (event) => {
-			console.log("image loaded!");
+			
 			this.init(image);
+			console.log("posting to engine!");
+            this.messageBus.post(new Message("renderer_started",this));
 		};
 		image.onerror = (error) => {
 			console.log(error);
@@ -39,6 +47,8 @@ export default class Renderer implements IMessageSubscriber {
 	receiveMessage(message: Message): void {
 		console.log("Renderer received " + message.identifier);
 	}
+
+	
 
 	public get getRenderer(): Renderer {
 		return this;
@@ -84,6 +94,11 @@ export default class Renderer implements IMessageSubscriber {
 		];
 		_indices = new Uint16Array([0, 1, 3, 1, 2, 3]);
 		var texCoords = [0.0, 0.0, 1.0, 0.0, 0.5, 1.0];
+
+		trans=mat4.create();
+
+		
+		transformLocation=gl.getUniformLocation(_program,"transform");
 
 		//Bind vertex array object, contains vertex buffer objects
 		_vao = gl.createVertexArray();
@@ -153,6 +168,14 @@ export default class Renderer implements IMessageSubscriber {
 
 		gl.bindTexture(gl.TEXTURE_2D, _texture);
 		gl.bindVertexArray(_vao);
+
+		//trans=mat4.translate(trans,trans,vec3.fromValues(0.5,-0.5,0));
+		
+		rotation+=now;
+		trans=mat4.rotateZ(trans,trans,now/2);
+		
+
+		gl.uniformMatrix4fv(transformLocation,false,trans);
 
 		var primitiveType = gl.TRIANGLES;
 		var offset = 0;

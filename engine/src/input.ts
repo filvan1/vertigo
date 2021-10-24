@@ -7,10 +7,12 @@ import { MessageBus } from "./message/messageBus";
 export default class InputHandler implements IMessageSubscriber{
     targetElement: HTMLCanvasElement;
     renderer: Renderer;
+    messageBus:MessageBus;
 
     constructor(target:HTMLCanvasElement, rend:Renderer){
         this.targetElement=target;
         this.renderer=rend;
+        this.messageBus=MessageBus.getInstance();
     }
     receiveMessage(message: Message): void {
     }
@@ -38,7 +40,7 @@ export default class InputHandler implements IMessageSubscriber{
 
 		this.targetElement.onmousedown=event=>{
 			console.log("X:"+event.pageX+" Y:"+event.pageY);
-            MessageBus.post(new Message("CLICK",this));
+            this.messageBus.post(new Message("CLICK",this));
 		}
 	}
 
