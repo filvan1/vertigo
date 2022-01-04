@@ -15,8 +15,11 @@ var _texture;
 var _ebo;
 var _indices;
 var model, view, projection;
-var viewMove = 0;
-var cameraPos, cameraDir, cameraTarget, cameraUp, cameraRight, cameraFront;
+var cameraYaw = -90,
+	cameraPitch = 0;
+var cameraPos, cameraUp, cameraRight, cameraFront;
+
+var mouseFirst = false;
 
 var deltaTime = 0,
 	lastFrame = 0;
@@ -43,6 +46,7 @@ export default class Renderer implements IMessageSubscriber {
 		this.messageBus.addSubscription(MessageConstants.inputKeyDown, this);
 		this.messageBus.addSubscription(MessageConstants.inputKeyUp, this);
 		this.messageBus.addSubscription(MessageConstants.inputMouseDown, this);
+		this.messageBus.addSubscription(MessageConstants.inputMouseUp, this);
 
 		var image = new Image();
 		image.onload = (event) => {
@@ -90,6 +94,19 @@ export default class Renderer implements IMessageSubscriber {
 			}
 		}
 
+		if (m == MessageConstants.inputMouseDown) {
+			this.messageBus.addSubscription(MessageConstants.inputMouseMove, this);
+			//message.sender.requestPointerLock();
+			mouseFirst = true;
+			processMouse(p);
+		} else if (m == MessageConstants.inputMouseUp) {
+			this.messageBus.removeSubscription(MessageConstants.inputMouseMove, this);
+			//message.sender.exitPointerLock();
+		}
+
+		if (m == MessageConstants.inputMouseMove) {
+			processMouse(p);
+		}
 	}
 
 	public get getRenderer(): Renderer {
@@ -123,9 +140,8 @@ export default class Renderer implements IMessageSubscriber {
 		cameraPos = vec3.fromValues(0, 0, 3);
 		cameraFront = vec3.fromValues(0, 0, -1);
 		cameraUp = vec3.fromValues(0, 1, 0);
-		cameraRight=vec3.create;
+		cameraRight = vec3.create;
 
-		
 		//pos:x,y,z; colour:r,g,b; texture:s,t
 		var vertices = [
 			-0.5, -0.5, -0.5, 0.0, 0.0, 0.5, -0.5, -0.5, 1.0, 0.0, 0.5, 0.5, -0.5,
@@ -354,24 +370,57 @@ export default class Renderer implements IMessageSubscriber {
 	}
 
 	processInput() {
-		let cameraSpeed = .005 * deltaTime;
+		let cameraSpeed = 0.005 * deltaTime;
 		if (w) {
-			vec3.scaleAndAdd(cameraPos,cameraPos,cameraFront,cameraSpeed);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraFront, cameraSpeed);
 		}
 		if (a) {
-			vec3.cross(cameraRight,cameraFront,cameraUp);
-			vec3.scaleAndAdd(cameraPos,cameraPos,cameraRight,-cameraSpeed);
-		
+			vec3.cross(cameraRight, cameraFront, cameraUp);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraRight, -cameraSpeed);
 		}
 		if (s) {
-			
-			vec3.scaleAndAdd(cameraPos,cameraPos,cameraFront,-cameraSpeed);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraFront, -cameraSpeed);
 		}
 		if (d) {
-			
-			vec3.cross(cameraRight,cameraFront,cameraUp);
-			vec3.scaleAndAdd(cameraPos,cameraPos,cameraRight,cameraSpeed);
+			vec3.cross(cameraRight, cameraFront, cameraUp);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraRight, cameraSpeed);
 		}
 	}
 	//#endregion
+}
+
+var xPos, yPos;
+function processMouse(position: Array<number>) {
+	
+	if (mouseFirst) {
+		xPos = position[0];
+		yPos = position[1];
+		mouseFirst = false;
+	}
+
+	let xOffset = position[0] - xPos;
+	let yOffset = yPos - position[1];
+	xPos = position[0];
+	yPos = position[1];
+
+	let mouseSensitivity = 0.1;
+	xOffset *= mouseSensitivity;
+	yOffset *= mouseSensitivity;
+
+	cameraYaw += xOffset;
+	cameraPitch += yOffset;
+
+	cameraPitch = cameraPitch > 89.0 ? 89.0 : cameraPitch;
+	cameraPitch = cameraPitch < -89.0 ? -89.0 : cameraPitch;
+	let pitchRadian = glMatrix.toRadian(cameraPitch);
+	let yawRadian= glMatrix.toRadian(cameraYaw);
+	let front = vec3.fromValues(
+		Math.cos(yawRadian) *
+			Math.cos(pitchRadian),
+		Math.sin(pitchRadian),
+		Math.sin(yawRadian) *
+			Math.cos(pitchRadian)
+	);
+
+	vec3.normalize(cameraFront, front);
 }
