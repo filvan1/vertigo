@@ -4,7 +4,8 @@ import { IMessageSubscriber } from "../message/IMessageSubscriber";
 import { Message } from "../message/message";
 import { MessageBus } from "../message/messageBus";
 import importImage from "../wall.jpg";
-import { mat4, vec3 } from "gl-matrix";
+import { glMatrix, mat4, vec3 } from "gl-matrix";
+import * as MessageConstants from "../message/messageConstants";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
@@ -13,15 +14,22 @@ var _vao;
 var _texture;
 var _ebo;
 var _indices;
-var now=1/60;
-var rotation=0;
-var trans;
-var transformLocation;
+var model, view, projection;
+var viewMove = 0;
+var cameraPos, cameraDir, cameraTarget, cameraUp, cameraRight, cameraFront;
+
+var deltaTime = 0,
+	lastFrame = 0;
+
+var w = false,
+	a = false,
+	s = false,
+	d = false;
 
 export default class Renderer implements IMessageSubscriber {
 	messageBus: MessageBus;
 	constructor(target: HTMLCanvasElement) {
-		this.messageBus=MessageBus.getInstance();
+		this.messageBus = MessageBus.getInstance();
 		_canvas = target;
 
 		if (_canvas == null) {
@@ -30,13 +38,16 @@ export default class Renderer implements IMessageSubscriber {
 
 		gl = _canvas.getContext("webgl2");
 		if (gl === undefined) throw new Error("Unable to initiaze WebGL");
-		this.messageBus.addSubscription("CLICK", this);
+
+		//Initialize input message subscriptions
+		this.messageBus.addSubscription(MessageConstants.inputKeyDown, this);
+		this.messageBus.addSubscription(MessageConstants.inputKeyUp, this);
+		this.messageBus.addSubscription(MessageConstants.inputMouseDown, this);
+
 		var image = new Image();
 		image.onload = (event) => {
-			
 			this.init(image);
-			console.log("posting to engine!");
-            this.messageBus.post(new Message("renderer_started",this));
+			this.messageBus.post(new Message("renderer_started", this));
 		};
 		image.onerror = (error) => {
 			console.log(error);
@@ -45,10 +56,41 @@ export default class Renderer implements IMessageSubscriber {
 	}
 
 	receiveMessage(message: Message): void {
-		console.log("Renderer received " + message.identifier);
-	}
+		let m = message.identifier;
+		let p = message.payload;
+		if (m == MessageConstants.inputKeyDown) {
+			switch (p) {
+				case "w":
+					w = true;
+					break;
+				case "a":
+					a = true;
+					break;
+				case "s":
+					s = true;
+					break;
+				case "d":
+					d = true;
+					break;
+			}
+		} else if (m == MessageConstants.inputKeyUp) {
+			switch (p) {
+				case "w":
+					w = false;
+					break;
+				case "a":
+					a = false;
+					break;
+				case "s":
+					s = false;
+					break;
+				case "d":
+					d = false;
+					break;
+			}
+		}
 
-	
+	}
 
 	public get getRenderer(): Renderer {
 		return this;
@@ -77,28 +119,56 @@ export default class Renderer implements IMessageSubscriber {
 		//Resize the GL Canvas to the size determined by CSS
 		Renderer.resizeCanvasToDisplaySize(_canvas);
 
-		//Look up where our compiled position attribute ended up
-		var positionAttributeLocation = gl.getAttribLocation(
-			_program,
-			"a_position"
-		);
-
-		//texture coordinate attribute
-		var texCoordLocation = gl.getAttribLocation(_program, "a_texCoord");
-
-		//pos:x,y,z;colour:r,g,b;texture:s,t
-		var vertices = [
-			0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-			1.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -0.5, 0.5, 0.0, 1.0,
-			1.0, 0.0, 0.0, 1.0
-		];
-		_indices = new Uint16Array([0, 1, 3, 1, 2, 3]);
-		var texCoords = [0.0, 0.0, 1.0, 0.0, 0.5, 1.0];
-
-		trans=mat4.create();
+		//Camera
+		cameraPos = vec3.fromValues(0, 0, 3);
+		cameraFront = vec3.fromValues(0, 0, -1);
+		cameraUp = vec3.fromValues(0, 1, 0);
+		cameraRight=vec3.create;
 
 		
-		transformLocation=gl.getUniformLocation(_program,"transform");
+		//pos:x,y,z; colour:r,g,b; texture:s,t
+		var vertices = [
+			-0.5, -0.5, -0.5, 0.0, 0.0, 0.5, -0.5, -0.5, 1.0, 0.0, 0.5, 0.5, -0.5,
+			1.0, 1.0, 0.5, 0.5, -0.5, 1.0, 1.0, -0.5, 0.5, -0.5, 0.0, 1.0, -0.5, -0.5,
+			-0.5, 0.0, 0.0, -0.5, -0.5, 0.5, 0.0, 0.0, 0.5, -0.5, 0.5, 1.0, 0.0, 0.5,
+			0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.0, -0.5, 0.5, 0.5, 0.0, 1.0,
+			-0.5, -0.5, 0.5, 0.0, 0.0, -0.5, 0.5, 0.5, 1.0, 0.0, -0.5, 0.5, -0.5, 1.0,
+			1.0, -0.5, -0.5, -0.5, 0.0, 1.0, -0.5, -0.5, -0.5, 0.0, 1.0, -0.5, -0.5,
+			0.5, 0.0, 0.0, -0.5, 0.5, 0.5, 1.0, 0.0, 0.5, 0.5, 0.5, 1.0, 0.0, 0.5,
+			0.5, -0.5, 1.0, 1.0, 0.5, -0.5, -0.5, 0.0, 1.0, 0.5, -0.5, -0.5, 0.0, 1.0,
+			0.5, -0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.5, 1.0, 0.0, -0.5, -0.5, -0.5, 0.0,
+			1.0, 0.5, -0.5, -0.5, 1.0, 1.0, 0.5, -0.5, 0.5, 1.0, 0.0, 0.5, -0.5, 0.5,
+			1.0, 0.0, -0.5, -0.5, 0.5, 0.0, 0.0, -0.5, -0.5, -0.5, 0.0, 1.0, -0.5,
+			0.5, -0.5, 0.0, 1.0, 0.5, 0.5, -0.5, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 0.0,
+			0.5, 0.5, 0.5, 1.0, 0.0, -0.5, 0.5, 0.5, 0.0, 0.0, -0.5, 0.5, -0.5, 0.0,
+			1.0
+		];
+		_indices = new Uint16Array([0, 1, 3, 1, 2, 3]);
+
+		model = mat4.create();
+		model = mat4.rotate(
+			model,
+			model,
+			glMatrix.toRadian(-55),
+			vec3.fromValues(1, 0, 0)
+		);
+
+		view = mat4.create();
+		view = mat4.lookAt(
+			view,
+			vec3.fromValues(0, 0, 3),
+			vec3.fromValues(0, 0, 0),
+			vec3.fromValues(0, 1, 0)
+		);
+
+		projection = mat4.create();
+		projection = mat4.perspective(
+			projection,
+			glMatrix.toRadian(45),
+			800 / 600,
+			0.1,
+			100
+		);
 
 		//Bind vertex array object, contains vertex buffer objects
 		_vao = gl.createVertexArray();
@@ -118,14 +188,11 @@ export default class Renderer implements IMessageSubscriber {
 		console.log(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE));
 
 		//position attribute
-		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 8 * 4, 0);
+		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * 4, 0);
 		gl.enableVertexAttribArray(0);
-		//color attribute
-		gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 8 * 4, 3 * 4);
-		gl.enableVertexAttribArray(1);
 		//texture coordinate attribute
-		gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 8 * 4, 6 * 4);
-		gl.enableVertexAttribArray(2);
+		gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 5 * 4, 3 * 4);
+		gl.enableVertexAttribArray(1);
 
 		//Texture coordinate buffer handling
 		_texture = gl.createTexture();
@@ -150,17 +217,27 @@ export default class Renderer implements IMessageSubscriber {
 		gl.texImage2D(target, mipMapLevel, internalFormat, format, type, image);
 		gl.generateMipmap(gl.TEXTURE_2D);
 
+		gl.enable(gl.DEPTH_TEST);
+
 		this.render();
 	}
 
 	public render(): void {
+		//Set accurate time
+		var currentFrame = Date.now();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		//Process input
+		this.processInput();
+
 		//Resize the GL Canvas to the size determined by CSS
 		Renderer.resizeCanvasToDisplaySize(_canvas);
 		//Tell WebGL how to convert from clip space to pixels!
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 		//Scrub the canvas
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.clearColor(0, 0, 0, 1);
 
 		//Tell it to use the program
@@ -169,13 +246,26 @@ export default class Renderer implements IMessageSubscriber {
 		gl.bindTexture(gl.TEXTURE_2D, _texture);
 		gl.bindVertexArray(_vao);
 
-		//trans=mat4.translate(trans,trans,vec3.fromValues(0.5,-0.5,0));
-		
-		rotation+=now;
-		trans=mat4.rotateZ(trans,trans,now/2);
-		
+		model = mat4.rotate(
+			model,
+			model,
+			glMatrix.toRadian(-1 / 2),
+			vec3.fromValues(1, 1, 0.5)
+		);
 
-		gl.uniformMatrix4fv(transformLocation,false,trans);
+		//Camera/view matrix transform
+		//cameraPos=vec3.add(cameraPos,cameraPos,vec3.fromValues(1,1,1));
+		var cameraCenter = vec3.fromValues(0, 0, 0);
+		vec3.add(cameraCenter, cameraPos, cameraFront);
+		mat4.lookAt(view, cameraPos, cameraCenter, cameraUp);
+
+		let mLoc = gl.getUniformLocation(_program, "model");
+		let vLoc = gl.getUniformLocation(_program, "view");
+		let pLoc = gl.getUniformLocation(_program, "projection");
+
+		gl.uniformMatrix4fv(mLoc, false, model);
+		gl.uniformMatrix4fv(vLoc, false, view);
+		gl.uniformMatrix4fv(pLoc, false, projection);
 
 		var primitiveType = gl.TRIANGLES;
 		var offset = 0;
@@ -190,7 +280,8 @@ export default class Renderer implements IMessageSubscriber {
 		//if less than 256 indices, use UNSIGNED_SHORT! See table above
 		var indexType = gl.UNSIGNED_SHORT;
 
-		gl.drawElements(primitiveType, count, indexType, offset);
+		//gl.drawElements(primitiveType, count, indexType, offset);
+		gl.drawArrays(gl.TRIANGLES, 0, 36);
 	}
 
 	//#region Helper functions --------------------------------------------------------
@@ -259,6 +350,27 @@ export default class Renderer implements IMessageSubscriber {
 			// Make the canvas the same size
 			canvas.width = displayWidth;
 			canvas.height = displayHeight;
+		}
+	}
+
+	processInput() {
+		let cameraSpeed = .005 * deltaTime;
+		if (w) {
+			vec3.scaleAndAdd(cameraPos,cameraPos,cameraFront,cameraSpeed);
+		}
+		if (a) {
+			vec3.cross(cameraRight,cameraFront,cameraUp);
+			vec3.scaleAndAdd(cameraPos,cameraPos,cameraRight,-cameraSpeed);
+		
+		}
+		if (s) {
+			
+			vec3.scaleAndAdd(cameraPos,cameraPos,cameraFront,-cameraSpeed);
+		}
+		if (d) {
+			
+			vec3.cross(cameraRight,cameraFront,cameraUp);
+			vec3.scaleAndAdd(cameraPos,cameraPos,cameraRight,cameraSpeed);
 		}
 	}
 	//#endregion

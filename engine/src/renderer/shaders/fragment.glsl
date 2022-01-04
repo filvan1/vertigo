@@ -4,7 +4,6 @@ precision highp float;
 
 out vec4 FragColor;
 
-in vec3 color;
 in vec2 texCoord;
 
 uniform sampler2D u_texture;
