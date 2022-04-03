@@ -1,5 +1,7 @@
 import VertexShaderSource from "./shaders/vertex.glsl";
 import FragmentShaderSource from "./shaders/fragment.glsl";
+import AltVertexShaderSource from "./shaders/testVert.glsl";
+import AltFragmentShaderSource from "./shaders/testFrag.glsl";
 import { IMessageSubscriber } from "../message/IMessageSubscriber";
 import { Message } from "../message/message";
 import { MessageBus } from "../message/messageBus";
@@ -9,7 +11,7 @@ import * as MessageConstants from "../message/messageConstants";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
-var _program;
+var _program, altProgram;
 var _vao;
 var _texture;
 var _ebo;
@@ -27,10 +29,13 @@ var deltaTime = 0,
 var w = false,
 	a = false,
 	s = false,
-	d = false;
+	d = false,
+	e = false,
+	q = false;
 
 export default class Renderer implements IMessageSubscriber {
 	messageBus: MessageBus;
+
 	constructor(target: HTMLCanvasElement) {
 		this.messageBus = MessageBus.getInstance();
 		_canvas = target;
@@ -76,6 +81,12 @@ export default class Renderer implements IMessageSubscriber {
 				case "d":
 					d = true;
 					break;
+				case "e":
+					e = true;
+					break;
+				case "q":
+					q = true;
+					break;
 			}
 		} else if (m == MessageConstants.inputKeyUp) {
 			switch (p) {
@@ -90,6 +101,12 @@ export default class Renderer implements IMessageSubscriber {
 					break;
 				case "d":
 					d = false;
+					break;
+				case "e":
+					e = false;
+					break;
+				case "q":
+					q = false;
 					break;
 			}
 		}
@@ -121,6 +138,19 @@ export default class Renderer implements IMessageSubscriber {
 			FragmentShaderSource
 		);
 
+		var altVert = Renderer.createShader(
+			gl,
+			gl.VERTEX_SHADER,
+			AltVertexShaderSource
+		);
+		var altFrag = Renderer.createShader(
+			gl,
+			gl.FRAGMENT_SHADER,
+			AltFragmentShaderSource
+		);
+
+		altProgram = Renderer.createProgram(gl, altVert, altFrag);
+
 		_program = Renderer.createProgram(gl, vert, frag);
 
 		//Tell WebGL to use our program
@@ -130,9 +160,12 @@ export default class Renderer implements IMessageSubscriber {
 			throw new Error("Program creation failed!");
 		}
 
+		//Maybe not delete?
+
+		/* 
 		gl.deleteShader(vert);
 		gl.deleteShader(frag);
-
+ */
 		//Resize the GL Canvas to the size determined by CSS
 		Renderer.resizeCanvasToDisplaySize(_canvas);
 
@@ -206,6 +239,7 @@ export default class Renderer implements IMessageSubscriber {
 		//position attribute
 		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * 4, 0);
 		gl.enableVertexAttribArray(0);
+
 		//texture coordinate attribute
 		gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 5 * 4, 3 * 4);
 		gl.enableVertexAttribArray(1);
@@ -367,6 +401,8 @@ export default class Renderer implements IMessageSubscriber {
 			canvas.width = displayWidth;
 			canvas.height = displayHeight;
 		}
+
+		return needResize;
 	}
 
 	processInput() {
@@ -385,13 +421,20 @@ export default class Renderer implements IMessageSubscriber {
 			vec3.cross(cameraRight, cameraFront, cameraUp);
 			vec3.scaleAndAdd(cameraPos, cameraPos, cameraRight, cameraSpeed);
 		}
+		if (e) {
+			vec3.cross(cameraRight, cameraFront, cameraUp);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraUp, cameraSpeed);
+		}
+		if (q) {
+			vec3.cross(cameraRight, cameraFront, cameraUp);
+			vec3.scaleAndAdd(cameraPos, cameraPos, cameraUp, -cameraSpeed);
+		}
 	}
 	//#endregion
 }
 
 var xPos, yPos;
 function processMouse(position: Array<number>) {
-	
 	if (mouseFirst) {
 		xPos = position[0];
 		yPos = position[1];
@@ -413,13 +456,11 @@ function processMouse(position: Array<number>) {
 	cameraPitch = cameraPitch > 89.0 ? 89.0 : cameraPitch;
 	cameraPitch = cameraPitch < -89.0 ? -89.0 : cameraPitch;
 	let pitchRadian = glMatrix.toRadian(cameraPitch);
-	let yawRadian= glMatrix.toRadian(cameraYaw);
+	let yawRadian = glMatrix.toRadian(cameraYaw);
 	let front = vec3.fromValues(
-		Math.cos(yawRadian) *
-			Math.cos(pitchRadian),
+		Math.cos(yawRadian) * Math.cos(pitchRadian),
 		Math.sin(pitchRadian),
-		Math.sin(yawRadian) *
-			Math.cos(pitchRadian)
+		Math.sin(yawRadian) * Math.cos(pitchRadian)
 	);
 
 	vec3.normalize(cameraFront, front);

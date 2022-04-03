@@ -1,19 +1,35 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <title>vertigo</title>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="./webgl.css" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
-            integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
-            crossorigin="anonymous" defer>
+
+<head>
+  <title>vertigo</title>
+  <meta charset="utf-8" name="viewport">
+  <link rel="stylesheet" href="./webgl.css" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+    integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+    crossorigin="anonymous" defer>
     </script>
-    <script type="text/javascript" src="app.js"></script>
-  </head>
+  <script type="text/javascript" src="app.js"></script>
+  <style type="text/css" media="screen">
+    /*  */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
 
-  <body>
-    <canvas id="vertigoCanvas" width="640" height="480"></canvas>
-  </body>
+    /* make the canvas fill its container */
+    #vertigoCanvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+  </style>
+</head>
 
-  
+<body>
+  <canvas id="vertigoCanvas"></canvas>
+</body>
+
+
 </html>
