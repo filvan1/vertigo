@@ -17,6 +17,10 @@ var _texture;
 var _ebo;
 var _indices;
 var model, view, projection;
+
+const fovPerPixel=.1*Math.PI/180;
+var _fov=45;
+
 var cameraYaw = -90,
 	cameraPitch = 0;
 var cameraPos, cameraUp, cameraRight, cameraFront;
@@ -210,11 +214,14 @@ export default class Renderer implements IMessageSubscriber {
 			vec3.fromValues(0, 1, 0)
 		);
 
+		
+		_fov=gl.canvas.clientHeight*fovPerPixel; // before: glMatrix.toRadian(90);
+
 		projection = mat4.create();
 		projection = mat4.perspective(
 			projection,
-			glMatrix.toRadian(45),
-			800 / 600,
+			_fov,
+			_canvas.clientWidth /_canvas.clientHeight ,
 			0.1,
 			100
 		);
@@ -233,8 +240,6 @@ export default class Renderer implements IMessageSubscriber {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, _ebo);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, _indices, gl.STATIC_DRAW);
 
-		console.log(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE));
-		console.log(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE));
 
 		//position attribute
 		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * 4, 0);
@@ -282,7 +287,15 @@ export default class Renderer implements IMessageSubscriber {
 		this.processInput();
 
 		//Resize the GL Canvas to the size determined by CSS
-		Renderer.resizeCanvasToDisplaySize(_canvas);
+		if(Renderer.resizeCanvasToDisplaySize(_canvas)){
+			projection = mat4.perspective(
+				projection,
+				_fov,
+				_canvas.clientWidth /_canvas.clientHeight ,
+				0.1,
+				100
+			);
+		}
 		//Tell WebGL how to convert from clip space to pixels!
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -352,7 +365,6 @@ export default class Renderer implements IMessageSubscriber {
 		gl.compileShader(shader);
 		var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
 		if (success) {
-			console.log(gl.getShaderInfoLog(shader));
 			return shader;
 		}
 
@@ -392,6 +404,9 @@ export default class Renderer implements IMessageSubscriber {
 		// Lookup the size the browser is displaying the canvas in CSS pixels.
 		const displayWidth = canvas.clientWidth;
 		const displayHeight = canvas.clientHeight;
+
+		//const dpr =window.devicePixelRatio;
+
 		// Check if the canvas is not the same size.
 		const needResize =
 			canvas.width !== displayWidth || canvas.height !== displayHeight;

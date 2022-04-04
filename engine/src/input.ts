@@ -24,7 +24,9 @@ export default class InputHandler implements IMessageSubscriber {
 		this.targetElement.onkeydown = (event) => {
 			if (event.repeat) return;
 			let key = event.key;
-			this.messageBus.post(new Message(MessageConstants.inputKeyDown, this, key));
+			this.messageBus.post(
+				new Message(MessageConstants.inputKeyDown, this, key)
+			);
 		};
 
 		this.targetElement.onkeyup = (event) => {
@@ -34,20 +36,33 @@ export default class InputHandler implements IMessageSubscriber {
 		};
 
 		this.targetElement.onmousedown = (event) => {
-			console.log("X:" + event.pageX + " Y:" + event.pageY);
-			this.messageBus.post(new Message(MessageConstants.inputMouseDown, this,[event.pageX,event.pageY]));
+			this.messageBus.post(
+				new Message(MessageConstants.inputMouseDown, this, [
+					event.pageX,
+					event.pageY
+				])
+			);
 		};
 
 		this.targetElement.onmouseup = (event) => {
-			console.log("X:" + event.pageX + " Y:" + event.pageY);
-			this.messageBus.post(new Message(MessageConstants.inputMouseUp, this,[event.pageX,event.pageY]));
+			this.messageBus.post(
+				new Message(MessageConstants.inputMouseUp, this, [
+					event.pageX,
+					event.pageY
+				])
+			);
 		};
 
-        this.targetElement.onmousemove=(event)=>{
-            this.messageBus.post(new Message(MessageConstants.inputMouseMove,this,[event.pageX,event.pageY]));
-        };
+		this.targetElement.onmousemove = (event) => {
+			this.messageBus.post(
+				new Message(MessageConstants.inputMouseMove, this, [
+					event.pageX,
+					event.pageY
+				])
+			);
+		};
 
-        /* document.onmouseup = (event) => {
+		/* document.onmouseup = (event) => {
 			console.log("DOC X:" + event.pageX + " Y:" + event.pageY);
 			this.messageBus.post(new Message(MessageConstants.inputMouseUp, document,[event.pageX,event.pageY]));
 		};
@@ -57,12 +72,11 @@ export default class InputHandler implements IMessageSubscriber {
         }; */
 	}
 
-    public requestPointerLock(){
-        this.targetElement.requestPointerLock();
-    }
+	public requestPointerLock() {
+		this.targetElement.requestPointerLock();
+	}
 
-    public exitPointerLock(){
-        document.exitPointerLock();
-    }
-    
+	public exitPointerLock() {
+		document.exitPointerLock();
+	}
 }
