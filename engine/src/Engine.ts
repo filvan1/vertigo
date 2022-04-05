@@ -1,8 +1,8 @@
-import Renderer from "./renderer/renderer";
-import InputHandler from "./input";
-import { MessageBus } from "./message/messageBus";
+import Renderer from "./renderer/Renderer";
+import InputHandler from "./Input";
+import { MessageBus } from "./message/MessageBus";
 import { IMessageSubscriber } from "./message/IMessageSubscriber";
-import { Message } from "./message/message";
+import { Message } from "./message/Message";
 
 var canvasID = "vertigoCanvas";
 

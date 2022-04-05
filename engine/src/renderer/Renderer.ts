@@ -3,11 +3,14 @@ import FragmentShaderSource from "./shaders/fragment.glsl";
 import AltVertexShaderSource from "./shaders/testVert.glsl";
 import AltFragmentShaderSource from "./shaders/testFrag.glsl";
 import { IMessageSubscriber } from "../message/IMessageSubscriber";
-import { Message } from "../message/message";
-import { MessageBus } from "../message/messageBus";
+import { Message } from "../message/Message";
+import { MessageBus } from "../message/MessageBus";
 import importImage from "../wall.jpg";
 import { glMatrix, mat4, vec3 } from "gl-matrix";
-import * as MessageConstants from "../message/messageConstants";
+import * as MessageConstants from "../message/MessageConstants";
+import { parseOBJ } from "./LoadModel";
+import Mesh from "./Mesh";
+import { Console, debug } from "console";
 
 export var gl: WebGL2RenderingContext;
 var _canvas: HTMLCanvasElement;
@@ -134,7 +137,7 @@ export default class Renderer implements IMessageSubscriber {
 		return this;
 	}
 
-	init(image) {
+	async init(image) {
 		var vert = Renderer.createShader(gl, gl.VERTEX_SHADER, VertexShaderSource);
 		var frag = Renderer.createShader(
 			gl,
@@ -157,10 +160,12 @@ export default class Renderer implements IMessageSubscriber {
 
 		_program = Renderer.createProgram(gl, vert, frag);
 
+		var currentProgram=_program;
+		
 		//Tell WebGL to use our program
-		gl.useProgram(_program);
+		gl.useProgram(currentProgram);
 
-		if (_program == null) {
+		if (currentProgram == null) {
 			throw new Error("Program creation failed!");
 		}
 
@@ -178,6 +183,9 @@ export default class Renderer implements IMessageSubscriber {
 		cameraFront = vec3.fromValues(0, 0, -1);
 		cameraUp = vec3.fromValues(0, 1, 0);
 		cameraRight = vec3.create;
+//REMOVE
+		var test=Mesh.CreateCube();
+		console.log("created mesh :\n"+test)
 
 		//pos:x,y,z; colour:r,g,b; texture:s,t
 		var vertices = [
@@ -214,7 +222,6 @@ export default class Renderer implements IMessageSubscriber {
 			vec3.fromValues(0, 1, 0)
 		);
 
-		
 		_fov=gl.canvas.clientHeight*fovPerPixel; // before: glMatrix.toRadian(90);
 
 		projection = mat4.create();
@@ -225,6 +232,16 @@ export default class Renderer implements IMessageSubscriber {
 			0.1,
 			100
 		);
+
+		/*
+			OBJ READING -----------------------------------------
+		*/
+		
+		/* const response= await fetch('../../res/cube.obj');
+		const text=await response.text;
+		const data = parseOBJ(text);
+		
+		 */
 
 		//Bind vertex array object, contains vertex buffer objects
 		_vao = gl.createVertexArray();

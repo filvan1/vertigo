@@ -1,8 +1,8 @@
-import Renderer from "./renderer/renderer";
+import Renderer from "./renderer/Renderer";
 import { IMessageSubscriber } from "./message/IMessageSubscriber";
-import { Message } from "./message/message";
-import { MessageBus } from "./message/messageBus";
-import * as MessageConstants from "./message/messageConstants";
+import { Message } from "./message/Message";
+import { MessageBus } from "./message/MessageBus";
+import * as MessageConstants from "./message/MessageConstants";
 
 export default class InputHandler implements IMessageSubscriber {
 	targetElement: HTMLCanvasElement;

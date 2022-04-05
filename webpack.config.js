@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  entry: './engine/src/app.ts',
+  entry: './engine/src/App.ts',
   devtool: 'inline-source-map',
   module: {
     rules: [
@@ -26,7 +26,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js'],
   },
   output: {
-    filename: 'app.js',
+    filename: 'App.js',
     path: path.resolve(__dirname, 'build'),
   },
 };

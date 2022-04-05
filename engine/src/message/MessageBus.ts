@@ -1,5 +1,5 @@
 import { IMessageSubscriber } from "./IMessageSubscriber";
-import { Message, MessagePriority } from "./message";
+import { Message, MessagePriority } from "./Message";
 
 export class MessageBus {
 	private _subscriberMap: { [identifier: string]: IMessageSubscriber[] } = {};
