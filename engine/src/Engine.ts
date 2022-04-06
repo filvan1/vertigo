@@ -1,15 +1,15 @@
 import Renderer from "./renderer/Renderer";
 import InputHandler from "./Input";
-import { MessageBus } from "./message/MessageBus";
-import { IMessageSubscriber } from "./message/IMessageSubscriber";
+import { EventMessageHandler } from "./message/EventMessageHandler";
+import { EventMessageSubscriber } from "./message/EventMessageSubscriber";
 import { Message } from "./message/Message";
 
 var canvasID = "vertigoCanvas";
 
-export class Engine implements IMessageSubscriber{
+export class Engine implements EventMessageSubscriber{
 	private _canvas: HTMLCanvasElement;
 	private _renderer: Renderer;
-	private _messageBus:MessageBus;
+	private _messageBus:EventMessageHandler;
 	private _render:boolean=false;
 
 	constructor(canvasID: string = "vertigoCanvas") {
@@ -26,7 +26,7 @@ export class Engine implements IMessageSubscriber{
 	}
 
 	initialize() {
-		this._messageBus=MessageBus.getInstance();
+		this._messageBus=EventMessageHandler.getInstance();
 		this._messageBus.addSubscription("renderer_started", this);
 		this._renderer = new Renderer(this._canvas);
 		

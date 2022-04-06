@@ -9,9 +9,14 @@ module.exports = {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
-      },
+      },/*
       {
-        test: /\.(glsl|vs|fs|vert|frag)$/,
+        test: /\.(json|gltf)/,
+        use: "json-loader",
+        exclude: /node_modules/
+      },*/
+      {
+        test: /\.(glsl|vs|fs|vert|frag|glb|obj|gltf)$/,
         use: 'raw-loader',
         exclude: /node_modules/,
       },
@@ -19,6 +24,11 @@ module.exports = {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
         use: 'file-loader',
         exclude: /node_modules/,
+      },
+      {
+        test: /\.bin$/,
+        exclude: /node_modules/,
+        use:'binary-loader',
       }
     ],
   },

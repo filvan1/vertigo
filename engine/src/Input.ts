@@ -1,18 +1,18 @@
 import Renderer from "./renderer/Renderer";
-import { IMessageSubscriber } from "./message/IMessageSubscriber";
+import { EventMessageSubscriber } from "./message/EventMessageSubscriber";
 import { Message } from "./message/Message";
-import { MessageBus } from "./message/MessageBus";
+import { EventMessageHandler } from "./message/EventMessageHandler";
 import * as MessageConstants from "./message/MessageConstants";
 
-export default class InputHandler implements IMessageSubscriber {
+export default class InputHandler implements EventMessageSubscriber {
 	targetElement: HTMLCanvasElement;
 	renderer: Renderer;
-	messageBus: MessageBus;
+	messageBus: EventMessageHandler;
 
 	constructor(target: HTMLCanvasElement, rend: Renderer) {
 		this.targetElement = target;
 		this.renderer = rend;
-		this.messageBus = MessageBus.getInstance();
+		this.messageBus = EventMessageHandler.getInstance();
 	}
 	receiveMessage(message: Message): void {}
 
@@ -23,6 +23,7 @@ export default class InputHandler implements IMessageSubscriber {
 
 		this.targetElement.onkeydown = (event) => {
 			if (event.repeat) return;
+			var toSent=new Event(MessageConstants.inputKeyDown)
 			let key = event.key;
 			this.messageBus.post(
 				new Message(MessageConstants.inputKeyDown, this, key)

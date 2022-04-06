@@ -1,17 +1,21 @@
 import Renderer from "./Renderer";
+import {vec2,vec3 } from "gl-matrix";
+import { debug } from "console";
+
+type Vertex={
+  position:number[],
+  normal:number[],
+  texCoord:number[]
+}
 
 type MeshData={
-    positions:number[],
-    uvs:number[],
-    normals:number[],
-    tangents:number[],
-    colours:number[],
+    vertices:number[],
     indices:number[]
 }
 
+
+
 export default class Mesh{
-    
-    
 
     private static _buffers={};
 
@@ -30,6 +34,10 @@ export default class Mesh{
       }
 
     public static CreateCube():MeshData{
+
+    var result:MeshData;
+    var vertices:number[];      
+
         const positions = [
           // Front face
           -1.0, -1.0,  1.0,
@@ -182,26 +190,25 @@ export default class Mesh{
           0.0, 0.0, -1.0,
         ];
     
-        const faceColors = [
-          [1.0,  1.0,  1.0,  1.0],    // Front face: white
-          [1.0,  0.0,  0.0,  1.0],    // Back face: red
-          [0.0,  1.0,  0.0,  1.0],    // Top face: green
-          [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-          [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-          [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-        ];
     
-        // Convert the array of colors into a table for all the vertices.
-    
-        let colours = [];
-    
-        for (var j = 0; j < faceColors.length; ++j) {
-          const c = faceColors[j];
-    
-          // Repeat each color four times for the four vertices of the face
-          colours = colours.concat(c, c, c, c);
+        // Set up vertex buffer; Vertex= [pos:x,y,z; colour:r,g,b; texture:s,t]:
+        try{
+          for(let i=0;i<positions.length;i+=3){
+            for(let j=0;j<3;j++){
+              vertices.push(positions[i+j]);
+            }
+            for(let j=0;j<3;j++){
+              vertices.push(normals[i+j]);
+            }
+            for(let j=0;j<2;j++){
+              vertices.push(uvs[i+j]);
+            }
+          }
+        } catch(e){
+          console.log("Invalid vertex data!")
         }
-    
+        
+
         const indices = [
           0,  1,  2,      0,  2,  3,    // front
           4,  5,  6,      4,  6,  7,    // back
@@ -211,7 +218,9 @@ export default class Mesh{
           20, 21, 22,     20, 22, 23,   // left
         ];
 
-        return {positions,uvs,normals,tangents,colours,indices}
+        result={vertices,indices};
+
+        return result;
 
         /*
         this._bufferData({size: 3, data: positions}, 'positions',GL);

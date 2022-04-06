@@ -1,6 +1,6 @@
 import { Message } from "./Message";
 
-export interface IMessageSubscriber{
+export interface EventMessageSubscriber{
     
     receiveMessage(message:Message):void;
 }

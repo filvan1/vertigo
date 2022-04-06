@@ -1,25 +1,30 @@
-import { IMessageSubscriber } from "./IMessageSubscriber";
+import { EventMessageSubscriber } from "./EventMessageSubscriber";
 import { Message, MessagePriority } from "./Message";
 
-export class MessageBus {
-	private _subscriberMap: { [identifier: string]: IMessageSubscriber[] } = {};
+export class EventMessageHandler {
+	private _subscriberMap: { [identifier: string]: EventMessageSubscriber[] } = {};
 	private _normalMessageCapacity = 10;
 	private _messageQueue: Message[] = [];
 
-	private static _instance: MessageBus;
+	private static _instance: EventMessageHandler
+;
 
 	private constructor() {}
 
 	public static getInstance() {
-		if (MessageBus._instance == null) {
-			MessageBus._instance = new MessageBus();
+		if (EventMessageHandler
+		._instance == null) {
+			EventMessageHandler
+		._instance = new EventMessageHandler
+		();
 		}
-		return MessageBus._instance;
+		return EventMessageHandler
+	._instance;
 	}
 
 	public addSubscription(
 		identifier: string,
-		subscriber: IMessageSubscriber
+		subscriber: EventMessageSubscriber
 	): void {
 		let current = this._subscriberMap[identifier];
 		if (current === undefined) {
@@ -38,7 +43,7 @@ export class MessageBus {
 
 	public removeSubscription(
 		identifier: string,
-		subscriber: IMessageSubscriber
+		subscriber: EventMessageSubscriber
 	): void {
 		let current = this._subscriberMap[identifier];
 		if (current === undefined) {

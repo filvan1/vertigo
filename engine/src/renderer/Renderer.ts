@@ -2,14 +2,14 @@ import VertexShaderSource from "./shaders/vertex.glsl";
 import FragmentShaderSource from "./shaders/fragment.glsl";
 import AltVertexShaderSource from "./shaders/testVert.glsl";
 import AltFragmentShaderSource from "./shaders/testFrag.glsl";
-import { IMessageSubscriber } from "../message/IMessageSubscriber";
+import { EventMessageSubscriber } from "../message/EventMessageSubscriber";
 import { Message } from "../message/Message";
-import { MessageBus } from "../message/MessageBus";
-import importImage from "../wall.jpg";
+import { EventMessageHandler } from "../message/EventMessageHandler";
+import importImage from "../../res/wall.jpg";
 import { glMatrix, mat4, vec3 } from "gl-matrix";
 import * as MessageConstants from "../message/MessageConstants";
-import { parseOBJ } from "./LoadModel";
 import Mesh from "./Mesh";
+import { LoadGLB } from "./LoadFile";
 import { Console, debug } from "console";
 
 export var gl: WebGL2RenderingContext;
@@ -40,11 +40,11 @@ var w = false,
 	e = false,
 	q = false;
 
-export default class Renderer implements IMessageSubscriber {
-	messageBus: MessageBus;
+export default class Renderer implements EventMessageSubscriber {
+	messageBus: EventMessageHandler;
 
 	constructor(target: HTMLCanvasElement) {
-		this.messageBus = MessageBus.getInstance();
+		this.messageBus = EventMessageHandler.getInstance();
 		_canvas = target;
 
 		if (_canvas == null) {
@@ -184,10 +184,16 @@ export default class Renderer implements IMessageSubscriber {
 		cameraUp = vec3.fromValues(0, 1, 0);
 		cameraRight = vec3.create;
 //REMOVE
-		var test=Mesh.CreateCube();
+		
+		/*var test=Mesh.CreateCube();
 		console.log("created mesh :\n"+test)
+		
 
+		var vertices=test.vertices;
+		_indices=test.indices;*/
+		LoadGLB("binaryCube.glb");
 		//pos:x,y,z; colour:r,g,b; texture:s,t
+		
 		var vertices = [
 			-0.5, -0.5, -0.5, 0.0, 0.0, 0.5, -0.5, -0.5, 1.0, 0.0, 0.5, 0.5, -0.5,
 			1.0, 1.0, 0.5, 0.5, -0.5, 1.0, 1.0, -0.5, 0.5, -0.5, 0.0, 1.0, -0.5, -0.5,
@@ -206,6 +212,8 @@ export default class Renderer implements IMessageSubscriber {
 		];
 		_indices = new Uint16Array([0, 1, 3, 1, 2, 3]);
 
+
+		
 		model = mat4.create();
 		model = mat4.rotate(
 			model,
@@ -259,6 +267,12 @@ export default class Renderer implements IMessageSubscriber {
 
 
 		//position attribute
+		/*
+		 This fucker is obscure. First attribute is buffer value index, 
+		 second value is number of attributes in the vertex buffer,
+		 second to last is the size of the data of each vertex,
+		 last is the step size in the vertex, as in index of the first value for the data.
+		 */
 		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * 4, 0);
 		gl.enableVertexAttribArray(0);
 
