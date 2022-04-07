@@ -33,9 +33,10 @@
     "fs": false
   },
   "dependencies": {
-    "@gltf-transform/core": "^2.0.5",
     "binary-loader": "^0.0.1",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
     "fs": "*",
-    "gl-matrix": "^3.4.3"
+    "gl-matrix": "^3.4.3",
+    "node-web-streams": "^0.2.2"
   }
 }
